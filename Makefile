@@ -1,5 +1,5 @@
 install:
 	go build -o ggit
-	strip ggit
+	strip --strip-all ggit
 	cp ggit /usr/local/bin/ggit
 	rm ggit

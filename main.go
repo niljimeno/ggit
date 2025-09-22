@@ -43,6 +43,8 @@ func run() error {
 		return push()
 	case "init":
 		return initProject()
+	case "fuck", "redo":
+		return redo()
 	}
 }
 
@@ -89,26 +91,19 @@ func initProject() error {
 
 	exec.Command("mkdir", "-p", projectName).Run()
 
-	commands := []*exec.Cmd{
+	commands := Commands{
 		exec.Command("go", "mod", "init", "github.com/"+uname+"/"+projectName),
 		exec.Command("git", "init"),
 		exec.Command("git", "remote", "add", "origin", "git@github.com:"+uname+"/"+projectName),
 	}
 
-	for _, v := range commands {
-		wd, err := os.Getwd()
-		if err != nil {
-			return err
-		}
-
-		v.Dir = wd + "/" + projectName
-		err = v.Run()
-		if err != nil {
-			return err
-		}
+	wd, err := os.Getwd()
+	if err != nil {
+		return err
 	}
 
-	return nil
+	dir := wd + "/" + projectName
+	return commands.ExecuteInDirectory(dir)
 }
 
 func push() error {
@@ -118,20 +113,24 @@ func push() error {
 	}
 	fmt.Println("commit name", commitName)
 
-	commands := []*exec.Cmd{
+	commands := Commands{
 		exec.Command("git", "add", "--all"),
 		exec.Command("git", "commit", "-m", commitName),
 		exec.Command("git", "push", "--set-upstream", "origin", "master"),
 	}
 
-	for _, v := range commands {
-		err = v.Run()
-		if err != nil {
-			return err
-		}
+	return commands.Execute()
+}
+
+func redo() error {
+	fmt.Println("redo!")
+	commands := Commands{
+		exec.Command("git", "add", "--all"),
+		exec.Command("git", "commit", "--amend", "--no-edit"),
+		exec.Command("git", "push", "--force"),
 	}
 
-	return nil
+	return commands.Execute()
 }
 
 func getArg(n int, prompt string) (string, error) {
